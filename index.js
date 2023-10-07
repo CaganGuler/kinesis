@@ -50,7 +50,7 @@ let marker = null;
 let markerLastPos = null;
 let markerShadowPos = null;
 
-const path = L.polyline([], {color: 'red'}).addTo(map);
+const path = L.polyline([], { color: 'red' }).addTo(map);
 let stepIndex = 0; // index of next step of path
 let speed = 1; // speed unit meter per second
 let loop = 'off'; // off; loop; uturn
@@ -60,7 +60,7 @@ const tickInterval = 1000; // update location per 1000ms
 const randomFactor = 0.2; // +-20% of origin value
 
 
-const tick = setInterval(function() {
+const tick = setInterval(function () {
     navigate();
 }, tickInterval);
 
@@ -116,7 +116,13 @@ document.getElementsByName('loopChoice').forEach((element) => {
 });
 
 
-map.on('click', function(e) {
+initMain({
+    latlng: {
+        lat: loadConfig('latitude', 53.338228), lng: loadConfig('longitude', - 6.259323)
+    }
+})
+
+map.on('click', function (e) {
     if (!initMain(e)) {
         addStep(e.latlng);
     }
@@ -126,7 +132,7 @@ map.on('zoomend', function () {
     saveConfig('zoom', map.getZoom());
 });
 
-map.on('moveend', function() {
+map.on('moveend', function () {
     const c = map.getCenter();
     saveConfig('latitude', c.lat);
     saveConfig('longitude', c.lng);
@@ -142,15 +148,15 @@ const random = (x) => {
 // return true if initialized marker, false if already initialized
 function initMain(e) {
     if (marker === null) {
-        marker = L.marker(e.latlng, {draggable: true});
-        if (teleport(e.latlng)) {
+        marker = L.marker(e.latlng, { draggable: true });
+        if (teleport(e.latlng, true)) {
             marker.addTo(map);
 
-            marker.on('mousedown', function(e) {
+            marker.on('mousedown', function (e) {
                 markerLastPos = e.latlng;
             });
 
-            marker.on('mouseup', function(e) {
+            marker.on('mouseup', function (e) {
                 if (!teleport(e.latlng)) {
                     marker.setLatLng(markerLastPos);
                 }
@@ -167,18 +173,27 @@ function initMain(e) {
 
 
 // return true if teleported, false if canceled teleportation
-function teleport(latlng) {
-    const choice = confirm('Teleport?')
+function teleport(latlng, bypassConfirm) {
+    var choice = true
+    if (!bypassConfirm) {
+        choice = confirm('Teleport?')
+    }
     if (choice) {
         marker.setLatLng(latlng);
         markerShadowPos = latlng;
         sendLocation(`${markerShadowPos.lat},${markerShadowPos.lng}`)
         clearSteps();
+        saveConfig('latitude', latlng.lat);
+        saveConfig('longitude', latlng.lng);
     }
     return choice;
 }
 
+function teleportWithPureCoordinates() {
+    const latlong = document.getElementById("locationtext").value
+    teleport({ lat: Number(latlong.split(",")[0].trim()), lng: Number(latlong.split(",")[1].trim()) })
 
+}
 // move towards target with distance meters
 function move(target, distance) {
     if (distance != 0) {
